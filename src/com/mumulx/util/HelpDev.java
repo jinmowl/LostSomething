@@ -7,8 +7,12 @@ import org.springframework.stereotype.Component;
 
 @Component("helpDev")
 public class HelpDev {
+	
+	//window本地
 	//定义图片保存的本地文件夹
 	private static final String UPLADMIMGSRC = "C:\\workplace\\STS\\MyProject";
+	//部署在linux
+	//private static final String UPLADMIMGSRC = "/app/tools";
 	public String getUPLADMIMGSRC() {
 		return UPLADMIMGSRC;
 	}
