@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+    <!-- 打开Spring的Annotation支持 -->
+    <context:annotation-config /> 
+	<!-- service,util所在包 加入IOC容器 -->
+	<context:component-scan
+		base-package="com.mumulx.service.impl,com.mumulx.util">
+	</context:component-scan>
+
+      <!-- 以前的方法是这样管理事务的：使用基于注解方式配置事务 <tx:annotation-driven transaction-manager="transactionManager"/> 
+    -->
+    <bean id="transactionManager"
+        class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!-- dataSource在applicationContext-dao.xml中配置了 -->
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+    <!-- 现在使用通知的方式管理 -->
+    <tx:advice id="txAdvice"
+        transaction-manager="transactionManager">
+        <tx:attributes>
+            <!-- 传播行为 -->
+            <tx:method name="save*" propagation="REQUIRED" />
+            <tx:method name="delete*" propagation="REQUIRED" />
+            <tx:method name="insert*" propagation="REQUIRED" />
+            <tx:method name="update*" propagation="REQUIRED" />
+            <tx:method name="find*" propagation="SUPPORTS"
+                read-only="true" />
+            <tx:method name="query*" propagation="SUPPORTS"
+                read-only="true" />
+            <tx:method name="get*" propagation="SUPPORTS"
+                read-only="true" />
+            <tx:method name="select*" propagation="SUPPORTS"
+                read-only="true" />
+        </tx:attributes>
+    </tx:advice>
+    <!-- 要扫描的service包 aop -->
+    <aop:config>
+        <aop:advisor advice-ref="txAdvice"
+            pointcut="execution(* com.mumulx.service.impl.*.*(..))" />
+    </aop:config>
+	<!-- 加载db.properties文件 -->
+	<bean id="config"
+		class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer">
+		<property name="locations">
+			<array>
+				<value>classpath:db.properties</value>
+			</array>
+		</property>
+	</bean>
+	<!-- 配置配置数据库信息（替代mybatis的配置文件conf.xml） -->
+	<bean id="dataSource"
+		class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="${driver}"></property>
+		<property name="url" value="${url}"></property>
+		<property name="username" value="${username}"></property>
+		<property name="password" value="${password}"></property>
+		<property name="maxActive" value="30" />
+        <property name="maxIdle" value="5" />
+	</bean>
+
+	<!-- 配置MyBatis需要的核心类：SqlSessionFactory -->
+	<!-- 在SpringIoc容器中 创建MyBatis的核心类 SqlSesionFactory -->
+	<bean id="sqlSessionFactory"
+		class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<!-- 加载mapper.xml路径 -->
+		<property name="mapperLocations"
+			value="classpath:com/mumulx/mapper/*.xml"></property>
+		<property name="typeAliasesPackage" value="com.mumulx.entity" />
+
+	</bean>
+
+	<!-- 将MyBatis的SqlSessionFactory 交给Spring -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="sqlSessionFactoryBeanName"
+			value="sqlSessionFactory"></property>
+		<property name="basePackage" value="com.mumulx.mapper"></property>
+	</bean>
+
+
+
+</beans>
